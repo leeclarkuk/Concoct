@@ -23,6 +23,14 @@ class LLMRequest:
     json_schema: dict[str, Any] | None = None
     max_output_tokens: int = 32_000
     context: dict[str, Any] = field(default_factory=dict)
+    # Stable leading part of the user prompt (project brief, full plan). It is
+    # identical across every call for a repository, so providers that support
+    # prompt caching can cache it; others simply prepend it.
+    prompt_prefix: str = ""
+
+    @property
+    def full_prompt(self) -> str:
+        return f"{self.prompt_prefix}\n\n{self.prompt}" if self.prompt_prefix else self.prompt
 
 
 @dataclass(frozen=True)

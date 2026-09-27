@@ -95,12 +95,17 @@ def render_brief(plan: DevelopmentPlan) -> str:
     return "\n".join(lines)
 
 
-def render_plan_outline(plan: DevelopmentPlan, current: int) -> str:
+def render_plan(plan: DevelopmentPlan) -> str:
     lines = []
     for step in plan.commits:
-        marker = "done" if step.index < current else ("NOW " if step.index == current else "todo")
-        lines.append(f"[{marker}] {step.index + 1:>2}. ({step.kind.value}) {step.subject}")
+        lines.append(f"{step.index + 1:>2}. ({step.kind.value}) {step.subject}")
+        lines.append(f"    {step.intent}")
     return "\n".join(lines)
+
+
+def build_prefix(plan: DevelopmentPlan) -> str:
+    """Stable, cacheable context shared by every request for one repository."""
+    return "\n".join([render_brief(plan), "", "## Development plan", render_plan(plan)])
 
 
 def build_commit_prompt(
@@ -109,11 +114,19 @@ def build_commit_prompt(
     workspace_text: str,
     feedback: str | None = None,
 ) -> str:
+    done = step.index
+    progress = (
+        "No commits exist yet: you are creating the repository."
+        if done == 0
+        else (
+            "Commit 1 of the plan is already in the repository shown below."
+            if done == 1
+            else f"Commits 1-{done} of the plan are already in the repository shown below."
+        )
+    )
     parts = [
-        render_brief(plan),
-        "",
-        "## Development plan",
-        render_plan_outline(plan, step.index),
+        "## Progress",
+        progress,
         "",
         "## Current repository",
         workspace_text,
@@ -136,11 +149,9 @@ def build_commit_prompt(
     return "\n".join(parts)
 
 
-def build_repair_prompt(plan: DevelopmentPlan, workspace_text: str, diagnostics: str) -> str:
+def build_repair_prompt(workspace_text: str, diagnostics: str) -> str:
     return "\n".join(
         [
-            render_brief(plan),
-            "",
             "## Current repository",
             workspace_text,
             "",

@@ -101,7 +101,12 @@ def settings_panel(summary: dict[str, Any], title: str = "Concoct") -> Panel:
         ("Complexity", str(summary["complexity"])),
         ("Commits", f"{summary['min_commits']}–{summary['max_commits']} per repository"),
         ("History", f"{summary['history_days']} days, {summary['timezone']}"),
-        ("Provider", f"{summary['provider']} · {summary['model']}"),
+        (
+            "Provider",
+            "offline (built-in template)"
+            if summary["provider"] == "offline"
+            else f"{summary['provider']} · {summary['model']} · effort {summary['effort']}",
+        ),
         ("Budget", " / ".join(budget) or "unlimited"),
         ("Repairs", f"up to {summary['max_repair_attempts']} per repository"),
         ("Output", str(summary["output_dir"])),

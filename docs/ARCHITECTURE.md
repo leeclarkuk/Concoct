@@ -79,21 +79,23 @@ src/concoct/
 │   ├── parsing.py         Robust JSON extraction + schema validation
 │   ├── workspace.py       Snapshot of current repo state for prompts; path safety
 │   ├── prompts.py         Commit / repair prompts
-│   ├── commits.py         CommitGenerator: PlannedCommit + state → FileChanges
-│   └── repair.py          Bounded repair loop driven by validation diagnostics
+│   └── commits.py         CommitGenerator: PlannedCommit + state → FileChanges,
+│                          and repair drafts from validation diagnostics
 ├── gitops/
 │   └── repository.py      GitPython wrapper: init, apply changes, dated commits
 ├── github/
 │   └── client.py          PyGithub wrapper: create, push, list, delete (guarded)
 ├── validation/
+│   ├── syntax.py          In-process parsers shared with per-commit screening
 │   ├── checks.py          Individual checks (files, syntax, deps, secrets, cmds)
 │   └── runner.py          Runs checks on a clean export of HEAD
-└── orchestrator.py        RepositoryOrchestrator + BatchRunner (the pipeline)
+└── orchestrator.py        RepositoryBuilder (one repo, incl. the bounded repair
+                           loop) + BatchRunner (all repos, publishing)
 ```
 
 ## 4. Pipeline
 
-For each repository (`orchestrator.RepositoryOrchestrator`):
+For each repository (`orchestrator.RepositoryBuilder`):
 
 1. **Concept & plan** (`planning.planner`): one LLM call produces a
    `ProjectSpec` (name, description, architecture, stack, features) and a
@@ -114,7 +116,7 @@ For each repository (`orchestrator.RepositoryOrchestrator`):
    `git archive` to a temp dir and checked: required files, syntax, dependency
    metadata, secret scan, then tests/lint in an isolated environment when the
    toolchain exists.
-5. **Repair** (`generation.repair`): on failure, up to `max_repair_attempts`
+5. **Repair** (`RepositoryBuilder._validate_and_repair` + `CommitGenerator.repair`): on failure, up to `max_repair_attempts`
    repair commits are generated from the diagnostics and committed as ordinary
    `fix:` commits after the last timestamp; validation re-runs each time. Never
    unbounded.

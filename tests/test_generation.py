@@ -112,7 +112,11 @@ def test_implement_sends_current_state_and_returns_plan_message() -> None:
     request = provider.requests[0]
     assert request.task == "commit"
     assert "VERSION = '1'" in request.prompt  # the model sees existing contents
-    assert "[done]  1." in request.prompt and "[NOW ]  2." in request.prompt
+    assert "Commit 1 of the plan is already in the repository" in request.prompt
+    # the brief and plan form a stable prefix shared by every call (cacheable)
+    assert "feat: add greet" in request.prompt_prefix
+    assert "add greet() to demo.core" in request.prompt_prefix
+    assert "VERSION" not in request.prompt_prefix
     assert request.context["step_index"] == 1
 
 

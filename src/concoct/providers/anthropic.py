@@ -62,7 +62,7 @@ class ClaudeProvider:
             "system": [
                 {"type": "text", "text": request.system, "cache_control": {"type": "ephemeral"}}
             ],
-            "messages": [{"role": "user", "content": request.prompt}],
+            "messages": [{"role": "user", "content": self._user_content(request)}],
         }
         adaptive = not self.model.startswith(_NO_ADAPTIVE_PREFIXES)
         output_config: dict[str, Any] = {}
@@ -77,6 +77,19 @@ class ClaudeProvider:
             kwargs["extra_headers"] = {"anthropic-beta": _FALLBACK_BETA}
             kwargs["extra_body"] = {"fallbacks": "default"}
         return kwargs
+
+    @staticmethod
+    def _user_content(request: LLMRequest) -> str | list[dict[str, Any]]:
+        if not request.prompt_prefix:
+            return request.prompt
+        return [
+            {
+                "type": "text",
+                "text": request.prompt_prefix,
+                "cache_control": {"type": "ephemeral"},
+            },
+            {"type": "text", "text": request.prompt},
+        ]
 
     def complete(self, request: LLMRequest) -> LLMResponse:
         try:

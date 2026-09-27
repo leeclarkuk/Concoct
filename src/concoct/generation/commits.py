@@ -14,6 +14,7 @@ from concoct.generation.prompts import (
     REPAIR_SCHEMA,
     REPAIR_SYSTEM,
     build_commit_prompt,
+    build_prefix,
     build_repair_prompt,
 )
 from concoct.generation.workspace import DEFAULT_CONTEXT_CHARS, render_workspace
@@ -103,6 +104,7 @@ class CommitGenerator:
                 task="commit",
                 system=COMMIT_SYSTEM,
                 prompt=build_commit_prompt(plan, step, workspace.text, feedback),
+                prompt_prefix=build_prefix(plan),
                 json_schema=COMMIT_SCHEMA,
                 max_output_tokens=64_000,
                 context={
@@ -127,7 +129,8 @@ class CommitGenerator:
             return LLMRequest(
                 task="repair",
                 system=REPAIR_SYSTEM,
-                prompt=build_repair_prompt(plan, workspace.text, diag),
+                prompt=build_repair_prompt(workspace.text, diag),
+                prompt_prefix=build_prefix(plan),
                 json_schema=REPAIR_SCHEMA,
                 max_output_tokens=64_000,
                 context={

@@ -96,6 +96,21 @@ def test_claude_provider_request_shape() -> None:
     assert response.usage == TokenUsage(10, 20, 5, 0)
 
 
+def test_claude_provider_caches_prompt_prefix() -> None:
+    client = FakeClient(message())
+    provider = ClaudeProvider("k" * 10, "claude-opus-5", client=client)
+    provider.complete(
+        LLMRequest(task="commit", system="s", prompt="variable", prompt_prefix="stable")
+    )
+    content = client.calls[0]["messages"][0]["content"]
+    assert content[0] == {
+        "type": "text",
+        "text": "stable",
+        "cache_control": {"type": "ephemeral"},
+    }
+    assert content[1] == {"type": "text", "text": "variable"}
+
+
 def test_claude_provider_haiku_has_no_adaptive_thinking() -> None:
     client = FakeClient(message())
     ClaudeProvider("k" * 10, "claude-haiku-4-5", client=client).complete(REQUEST)

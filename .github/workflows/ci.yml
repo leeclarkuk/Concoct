@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: uv sync --locked
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Unit tests
+        run: uv run pytest
+      - name: Integration tests
+        env:
+          CONCOCT_RUN_INTEGRATION: "1"
+        run: uv run pytest tests/test_validation.py -k real
+      - name: End-to-end smoke test (offline provider)
+        run: |
+          git config --global user.name ci && git config --global user.email ci@example.invalid
+          uv run concoct generate --provider offline --language python --tech fastapi \
+            --category "developer tool" --min-commits 8 --max-commits 15 --seed 1 --no-push
+          uv run concoct inspect hooklens --no-plan
